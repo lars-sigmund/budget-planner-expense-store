@@ -2,7 +2,7 @@ name: CI Budget Planner Expense Store
 on:
   - push
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,4 +22,23 @@ jobs:
         uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew build
+        run: ./gradlew test
+
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: |
+          IMAGE_ID=ghcr.io/${{github.repository_owner}}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{github.ref}}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{github.ref}}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "main" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          ./gradlew bootBuildImage --imageName=ghcr.io/${{github.repository_owner}}/$IMAGE_ID:$VERSION --user=${{github.actor}} --password=${{secrets.GITHUB_TOKEN}}
