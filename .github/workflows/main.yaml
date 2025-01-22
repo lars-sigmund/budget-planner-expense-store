@@ -33,6 +33,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build image
         run: |
           IMAGE_ID=ghcr.io/${{github.repository_owner}}/$IMAGE_NAME
@@ -42,4 +44,5 @@ jobs:
           [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          ./gradlew bootBuildImage --imageName=ghcr.io/${{github.repository_owner}}/$IMAGE_ID:$VERSION --docker.builderRegistry.username=${{github.actor}} --docker.builderRegistry.password=${{secrets.GITHUB_TOKEN}}
+          ./gradlew bootBuildImage --imageName=$IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
