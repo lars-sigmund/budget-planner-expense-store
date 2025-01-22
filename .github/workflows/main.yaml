@@ -25,6 +25,7 @@ jobs:
         run: ./gradlew test
 
   publish:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -41,4 +42,4 @@ jobs:
           [ "$VERSION" == "main" ] && VERSION=latest
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-          ./gradlew bootBuildImage --imageName=ghcr.io/${{github.repository_owner}}/$IMAGE_ID:$VERSION --username=${{github.actor}} --password=${{secrets.GITHUB_TOKEN}}
+          ./gradlew bootBuildImage --imageName=ghcr.io/${{github.repository_owner}}/$IMAGE_ID:$VERSION --docker.builderRegistry.username=${{github.actor}} --docker.builderRegistry.password=${{secrets.GITHUB_TOKEN}}
