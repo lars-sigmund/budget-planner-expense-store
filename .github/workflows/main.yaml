@@ -24,8 +24,20 @@ jobs:
       - name: Build with Gradle Wrapper
         run: ./gradlew test
 
-  publish:
+  release:
     needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for new release
+        run: npx semantic-release
+
+  publish:
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       packages: write
