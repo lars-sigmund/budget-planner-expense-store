@@ -44,6 +44,8 @@ jobs:
       - name: Check for new release
         if: endsWith(github.ref, 'main')
         run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
   publish:
     needs:
