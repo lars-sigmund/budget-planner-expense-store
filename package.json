@@ -7,7 +7,7 @@
     "email": "larsvsigmund@gmail.com",
     "url": "https://github.com/lars-sigmund"
   },
-  "private": "true",
+  "private": true,
   "devDependencies": {
     "semantic-release": "^24.2.1"
   },
@@ -23,6 +23,13 @@
       "@semantic-release/github",
       {
         "assets": ["dist/**"]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "set-version ${nextRelease.version}",
+        "publishCmd": "publish-package"
       }
     ]
   ]
