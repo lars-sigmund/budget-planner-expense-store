@@ -31,7 +31,6 @@ jobs:
           report_paths: '**/build/test-results/test/TEST-*.xml'
 
   release:
-    if: endsWith(github.ref, 'main')
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -39,8 +38,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        if: endsWith(github.ref, 'main')
 
       - name: Check for new release
+        if: endsWith(github.ref, 'main')
         run: npx semantic-release
 
   publish:
