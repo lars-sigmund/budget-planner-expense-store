@@ -22,9 +22,16 @@ jobs:
         uses: gradle/actions/setup-gradle@cc4fc85e6b35bafd578d5ffbc76a5518407e1af0 # v4.2.1
 
       - name: Build with Gradle Wrapper
-        run: ./gradlew test
+        run: ./gradlew test --info --stacktrace
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v5
+        if: success() || failure() # always run even if the previous step fails
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
 
   release:
+    if: endsWith(github.ref, 'main')
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -37,7 +44,9 @@ jobs:
         run: npx semantic-release
 
   publish:
-    needs: release
+    needs:
+      - test
+      - release
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -45,16 +54,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: '0'
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Build image
         run: |
-          IMAGE_ID=ghcr.io/${{github.repository}}
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          VERSION=$(echo "${{github.ref}}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{github.ref}}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          [ "$VERSION" == "main" ] && VERSION=latest
+          VERSION==$(git describe --match "[0-9]*.[0-9]*.*[0-9]" --abbrev=0 --tags `git rev-list --tags --max-count=1`)
+          APPENDIX=`node ci/appendix.js ${{github.ref}}`
+          IMAGE_TAG=$(echo $VERSION-$APPENDIX | awk '{print tolower($0)}')
+          IMAGE_ID=$(echo ghcr.io/${{github.repository}} | awk '{print tolower($0)}')
           echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          ./gradlew bootBuildImage --imageName=$IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          echo IMAGE_TAG=$IMAGE_TAG
+          ./gradlew bootBuildImage --imageName=$IMAGE_ID:$IMAGE_TAG
+          docker push $IMAGE_ID:$IMAGE_TAG
